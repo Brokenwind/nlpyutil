@@ -6,7 +6,7 @@
     <a href="https://github.com/Brokenwind/nlpyutil/blob/master/LICENSE">
         <img alt="GitHub" src="https://img.shields.io/github/license/Brokenwind/nlpyutil.svg?color=blue">
     </a>
-    <a href="https://huggingface.co/transformers/index.html">
+    <a href="https://pypi.org/project/nlpyutil">
         <img alt="Documentation" src="https://img.shields.io/website/http/pypi.org/project/nlpyutil.svg?down_color=red&down_message=offline&up_message=online">
     </a>
 </p>
