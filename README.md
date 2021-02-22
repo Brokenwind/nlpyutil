@@ -1,5 +1,5 @@
 <h2 align="center">
-<p>nlpyutil
+<p>Nlpyutil
 </h2>
 
 <p align="center">
@@ -7,7 +7,7 @@
         <img alt="GitHub" src="https://img.shields.io/github/license/Brokenwind/nlpyutil.svg?color=blue">
     </a>
     <a href="https://huggingface.co/transformers/index.html">
-        <img alt="Documentation" src="https://img.shields.io/website/http/huggingface.co/transformers/index.html.svg?down_color=red&down_message=offline&up_message=online">
+        <img alt="Documentation" src="https://img.shields.io/website/http/pypi.org/project/nlpyutil.svg?down_color=red&down_message=offline&up_message=online">
     </a>
 </p>
 
