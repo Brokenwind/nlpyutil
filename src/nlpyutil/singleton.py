@@ -27,14 +27,12 @@ class Singleton:
     """
     __cls = dict()
 
-    def __init__(self):
+    def __init__(self, cls):
         '''
         模块被import时调用
         :param cls: 被装饰的类
         '''
-        print('nice')
-        # self.__key = cls
-        pass
+        self.__key = cls
 
     def __call__(self, *args, **kwargs):
         '''

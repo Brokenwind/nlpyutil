@@ -33,6 +33,7 @@ def deprecated(func):
 
     @wraps(func)
     def _wrapper(*args, **kwargs):
+        print('The function {} is deprecated, it will be removed in future version'.format(func.__name__))
         return func(*args, **kwargs)
 
     return _wrapper
@@ -47,6 +48,7 @@ def disabled(func):
 
     @wraps(func)
     def _wrapper(*args, **kwargs):
+        print('The function {} is disabled, it is not allowed to access'.format(func.__name__))
         raise RuntimeError('the function {} is disabled.'.format(format(func.__name__)))
 
     return _wrapper

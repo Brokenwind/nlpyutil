@@ -27,7 +27,7 @@ import sys
 from argparse import ArgumentParser
 from enum import Enum
 from pathlib import Path
-from typing import Any, Iterable, NewType, Tuple, Union
+from typing import Any, Iterable, List, NewType, Optional, Tuple, Union
 
 import yaml
 
@@ -35,9 +35,22 @@ DataClass = NewType("DataClass", Any)
 DataClassType = NewType("DataClassType", Any)
 
 
+def string_to_bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise ValueError(
+            f"Truthy value expected: got {v} but expected one of yes/no, true/false, t/f, y/n, 1/0 (case insensitive)."
+        )
+
+
 class SdArgumentParser(ArgumentParser):
     """
-    SdArgumentParser 的子类，主要用于将命令行参数，yaml文件中的参数，json中的参数转换为 dataclass
+    ArgumentParser 的子类，主要用于将命令行参数，yaml文件中的参数，json中的参数转换为 dataclass
     """
 
     dataclass_types: Iterable[DataClassType]
@@ -59,8 +72,12 @@ class SdArgumentParser(ArgumentParser):
 
     def _add_dataclass_arguments(self, dtype: DataClassType):
         for field in dataclasses.fields(dtype):
+            if not field.init:
+                continue
             field_name = f"--{field.name}"
             kwargs = field.metadata.copy()
+            # field.metadata is not used at all by Data Classes,
+            # it is provided as a third-party extension mechanism.
             if isinstance(field.type, str):
                 raise ImportError(
                     "This implementation is not compatible with Postponed Evaluation of Annotations (PEP 563),"
@@ -68,33 +85,53 @@ class SdArgumentParser(ArgumentParser):
                     "We will add compatibility when Python 3.9 is released."
                 )
             typestring = str(field.type)
-            for x in (int, float, str, list, dict):
-                # Optional包裹的参数
-                if typestring == f"typing.Union[{x.__name__}, NoneType]":
-                    field.type = x
+            for prim_type in (int, float, str):
+                for collection in (List,):
+                    if (
+                            typestring == f"typing.Union[{collection[prim_type]}, NoneType]"
+                            or typestring == f"typing.Optional[{collection[prim_type]}]"
+                    ):
+                        field.type = collection[prim_type]
+                if (
+                        typestring == f"typing.Union[{prim_type.__name__}, NoneType]"
+                        or typestring == f"typing.Optional[{prim_type.__name__}]"
+                ):
+                    field.type = prim_type
+
             if isinstance(field.type, type) and issubclass(field.type, Enum):
-                kwargs["choices"] = list(field.type)
-                kwargs["type"] = field.type
+                kwargs["choices"] = [x.value for x in field.type]
+                kwargs["type"] = type(kwargs["choices"][0])
                 if field.default is not dataclasses.MISSING:
                     kwargs["default"] = field.default
-            elif field.type is bool:
-                kwargs["action"] = "store_false" if field.default is True else "store_true"
+            elif field.type is bool or field.type is Optional[bool]:
                 if field.default is True:
-                    field_name = f"--no-{field.name}"
-                    kwargs["dest"] = field.name
-            elif field.type is list or field.type is dict:
-                kwargs["type"] = json.loads
-                if field.default is not dataclasses.MISSING:
-                    kwargs["default"] = field.default
-                # 如果指定了default_factory，那么就调用default_factory指定的方法初始化参数
-                elif field.default_factory is not dataclasses.MISSING:
+                    self.add_argument(f"--no_{field.name}", action="store_false", dest=field.name, **kwargs)
+
+                # Hack because type=bool in argparse does not behave as we want.
+                kwargs["type"] = string_to_bool
+                if field.type is bool or (field.default is not None and field.default is not dataclasses.MISSING):
+                    # Default value is True if we have no default when of type bool.
+                    default = True if field.default is dataclasses.MISSING else field.default
+                    # This is the value that will get picked if we don't include --field_name in any way
+                    kwargs["default"] = default
+                    # This tells argparse we accept 0 or 1 value after --field_name
+                    kwargs["nargs"] = "?"
+                    # This is the value that will get picked if we do --field_name (without value)
+                    kwargs["const"] = True
+            elif hasattr(field.type, "__origin__") and issubclass(field.type.__origin__, List):
+                kwargs["nargs"] = "+"
+                kwargs["type"] = field.type.__args__[0]
+                assert all(
+                    x == kwargs["type"] for x in field.type.__args__
+                ), "{} cannot be a List of mixed types".format(field.name)
+                if field.default_factory is not dataclasses.MISSING:
                     kwargs["default"] = field.default_factory()
-                else:
-                    kwargs["required"] = True
             else:
                 kwargs["type"] = field.type
                 if field.default is not dataclasses.MISSING:
                     kwargs["default"] = field.default
+                elif field.default_factory is not dataclasses.MISSING:
+                    kwargs["default"] = field.default_factory()
                 else:
                     kwargs["required"] = True
             self.add_argument(field_name, **kwargs)
@@ -150,6 +187,19 @@ class SdArgumentParser(ArgumentParser):
             return (*outputs, remaining_args)
         else:
             return (*outputs,)
+
+    def parse_dict(self, args: dict) -> Tuple[DataClass, ...]:
+        """
+        Alternative helper method that does not use `argparse` at all, instead uses a dict and populating the dataclass
+        types.
+        """
+        outputs = []
+        for dtype in self.dataclass_types:
+            keys = {f.name for f in dataclasses.fields(dtype) if f.init}
+            inputs = {k: v for k, v in args.items() if k in keys}
+            obj = dtype(**inputs)
+            outputs.append(obj)
+        return (*outputs,)
 
     def parse_json_file(self, json_file: str) -> Tuple[DataClass, ...]:
         """

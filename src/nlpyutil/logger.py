@@ -21,13 +21,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import inspect
+import logging
 import os
 import sys
 import time
-import inspect
-import logging
 from functools import wraps
-from nlpyutil.singleton import Singleton
+from . import Singleton
 
 
 def _append_log_info(func):
@@ -58,7 +58,6 @@ def _append_log_info(func):
         func(call_object, message, **kwargs)
 
     return append
-
 
 @Singleton
 class Logger:
@@ -131,8 +130,3 @@ class Logger:
 
     def _exec_type(self):
         return "DEBUG" if os.environ.get("IPYTHONENABLE") else "INFO"
-
-
-if __name__ == '__main__':
-    logger = Logger()
-    print(logger.logger)
