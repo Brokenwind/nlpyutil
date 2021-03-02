@@ -42,7 +42,7 @@ install_requires = [
 ]
 
 setup(name='nlpyutil',
-      version='0.2.0',
+      version='0.4.0',
       description='Personal usual utils for python',
       long_description=open("README.md", "r", encoding="utf-8").read(),
       long_description_content_type="text/markdown",
@@ -66,5 +66,6 @@ setup(name='nlpyutil',
       keywords='NLP, Utils',
       packages=find_packages("src"),
       package_dir={"": "src"},
+      package_data={'nlpyutil': ['rarewords.txt']},
       install_requires=install_requires
       )
