@@ -28,7 +28,10 @@ from setuptools import find_packages, setup
 _deps = [
     "numpy>=1.17",
     "dataclasses",
-    "zhon"
+    "zhon",
+    "langdetect",
+    "opencc-python-reimplemented",
+    "jieba"
 ]
 
 # some of the values are versioned whereas others aren't.
@@ -39,6 +42,9 @@ install_requires = [
     deps["numpy"],
     deps["dataclasses"] + ";python_version<'3.7'",  # dataclasses for Python versions that don't have it
     deps["zhon"],
+    deps["langdetect"],
+    deps["opencc-python-reimplemented"],
+    deps["jieba"]
 ]
 
 setup(name='nlpyutil',
@@ -66,6 +72,6 @@ setup(name='nlpyutil',
       keywords='NLP, Utils',
       packages=find_packages("src"),
       package_dir={"": "src"},
-      package_data={'nlpyutil': ['rarewords.txt']},
+      package_data={'nlpyutil': ['data/rarewords.txt']},
       install_requires=install_requires
       )
