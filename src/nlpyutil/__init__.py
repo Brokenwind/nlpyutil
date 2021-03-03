@@ -30,3 +30,5 @@ from .decorators import *
 from .localize import LocalizeThread
 
 from . import usual_pattern as pattern
+from .rarewords import RAREWORDS
+from .stopwords import STOPWORDS
